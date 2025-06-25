@@ -1,0 +1,128 @@
+plugins {
+    id 'java-library'
+    id 'io.qameta.allure' version '2.11.2'
+    id 'io.freefair.lombok' version '8.13.1'
+}
+
+repositories {
+    mavenCentral()
+}
+
+def allureVersion = "2.29.1"
+
+allure {
+    report {
+        version.set(allureVersion)
+    }
+    adapter {
+        aspectjWeaver.set(true)
+        frameworks {
+            junit5 {
+                enabled.set(true)
+            }
+        }
+    }
+}
+
+dependencies {
+    testImplementation (
+            "org.junit.jupiter:junit-jupiter:5.12.2",
+            "org.slf4j:slf4j-simple:2.0.17",
+            'io.rest-assured:rest-assured:5.5.1',
+            'io.rest-assured:json-schema-validator:5.5.1',
+            'com.fasterxml.jackson.core:jackson-databind:2.18.3',
+            "io.qameta.allure:allure-junit5:$allureVersion",
+            "io.qameta.allure:allure-rest-assured:$allureVersion",
+            "org.assertj:assertj-core:3.27.3",
+            "org.projectlombok:lombok:1.18.38"
+    )
+}
+
+test {
+    useJUnitPlatform()
+
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+
+    testLogging {
+        lifecycle {
+            events "started", "skipped", "failed", "standard_error", "standard_out"
+            exceptionFormat "short"
+        }
+    }
+
+    systemProperty 'demoqa.base.url', 'https://demoqa.com'
+    systemProperty 'test.username', System.getProperty('test.username', 'testuser')
+    systemProperty 'test.password', System.getProperty('test.password', 'TestPassword123!')
+
+    systemProperty 'allure.results.directory', 'build/allure-results'
+
+    jvmArgs '-Xmx1024m'
+}
+
+task cleanAllureResults(type: Delete) {
+    description = 'Очистка результатов предыдущих запусков Allure'
+    delete 'build/allure-results'
+}
+
+task testWithCleanResults {
+    description = 'Запуск тестов с очисткой предыдущих результатов Allure'
+    dependsOn cleanAllureResults, test
+}
+
+task testProfile(type: Test) {
+    description = 'Запуск тестов профиля'
+    useJUnitPlatform {
+        includeTags 'profile'
+    }
+}
+
+task testDelete(type: Test) {
+    description = 'Запуск тестов удаления'
+    useJUnitPlatform {
+        includeTags 'delete'
+    }
+}
+
+task testNegative(type: Test) {
+    description = 'Запуск негативных тестов'
+    useJUnitPlatform {
+        includeTags 'negative'
+    }
+}
+
+task testWorkflow(type: Test) {
+    description = 'Запуск комплексных сценариев'
+    useJUnitPlatform {
+        includeTags 'workflow'
+    }
+}
+
+tasks.withType(Test) {
+    systemProperty 'demoqa.base.url', 'https://demoqa.com'
+    systemProperty 'test.username', System.getProperty('test.username', 'testuser')
+    systemProperty 'test.password', System.getProperty('test.password', 'TestPassword123!')
+    systemProperty 'allure.results.directory', 'build/allure-results'
+
+    testLogging {
+        lifecycle {
+            events "started", "skipped", "failed", "standard_error", "standard_out"
+            exceptionFormat "short"
+        }
+    }
+
+    finalizedBy 'allureReport'
+}
+
+task openAllureReport(type: Exec) {
+    description = 'Открытие Allure отчета в браузере'
+    dependsOn allureReport
+
+    // Определяем команду в зависимости от ОС
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        commandLine 'cmd', '/c', 'start', 'build/reports/allure-report/index.html'
+    } else if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+        commandLine 'open', 'build/reports/allure-report/index.html'
+    } else {
+        commandLine 'xdg-open', 'build/reports/allure-report/index.html'
+    }
+}
