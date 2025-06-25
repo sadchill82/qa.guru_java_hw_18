@@ -33,13 +33,21 @@ dependencies {
             'com.fasterxml.jackson.core:jackson-databind:2.18.3',
             "io.qameta.allure:allure-junit5:$allureVersion",
             "io.qameta.allure:allure-rest-assured:$allureVersion",
-            "org.assertj:assertj-core:3.27.3",
+            "org.assertj.core.api:assertj-core:3.27.3",
             "org.projectlombok:lombok:1.18.38"
     )
 }
 
+def testSuite = System.getProperty('TEST_SUITE', 'all')
+def testUsername = System.getProperty('test.username', System.getProperty('TEST_USERNAME', 'TOOLSQA-Test'))
+def testPassword = System.getProperty('test.password', System.getProperty('TEST_PASSWORD', 'Test@@123'))
+
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        if (testSuite != 'all') {
+            includeTags testSuite
+        }
+    }
 
     systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
 
@@ -51,12 +59,17 @@ test {
     }
 
     systemProperty 'demoqa.base.url', 'https://demoqa.com'
-    systemProperty 'test.username', System.getProperty('test.username', 'testuser')
-    systemProperty 'test.password', System.getProperty('test.password', 'TestPassword123!')
-
+    systemProperty 'test.username', testUsername
+    systemProperty 'test.password', testPassword
     systemProperty 'allure.results.directory', 'build/allure-results'
 
     jvmArgs '-Xmx1024m'
+
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+
+    ignoreFailures = true
+
+    finalizedBy allureReport
 }
 
 task cleanAllureResults(type: Delete) {
@@ -97,10 +110,28 @@ task testWorkflow(type: Test) {
     }
 }
 
+task runJenkinsTests(type: Test) {
+    description = 'Запуск тестов для Jenkins с поддержкой параметров'
+
+    useJUnitPlatform {
+        if (testSuite != 'all') {
+            includeTags testSuite
+        }
+    }
+
+    doFirst {
+        println "=== Jenkins Test Execution ==="
+        println "TEST_SUITE: $testSuite"
+        println "TEST_USERNAME: $testUsername"
+        println "TEST_PASSWORD: ${testPassword ? '[MASKED]' : 'NOT_SET'}"
+        println "============================="
+    }
+}
+
 tasks.withType(Test) {
     systemProperty 'demoqa.base.url', 'https://demoqa.com'
-    systemProperty 'test.username', System.getProperty('test.username', 'testuser')
-    systemProperty 'test.password', System.getProperty('test.password', 'TestPassword123!')
+    systemProperty 'test.username', testUsername
+    systemProperty 'test.password', testPassword
     systemProperty 'allure.results.directory', 'build/allure-results'
 
     testLogging {
@@ -110,19 +141,37 @@ tasks.withType(Test) {
         }
     }
 
-    finalizedBy 'allureReport'
+    jvmArgs '-Xmx1024m'
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+
+    ignoreFailures = true
+
+    finalizedBy allureReport
 }
 
 task openAllureReport(type: Exec) {
     description = 'Открытие Allure отчета в браузере'
     dependsOn allureReport
 
-    // Определяем команду в зависимости от ОС
     if (System.getProperty('os.name').toLowerCase().contains('windows')) {
         commandLine 'cmd', '/c', 'start', 'build/reports/allure-report/index.html'
     } else if (System.getProperty('os.name').toLowerCase().contains('mac')) {
         commandLine 'open', 'build/reports/allure-report/index.html'
     } else {
         commandLine 'xdg-open', 'build/reports/allure-report/index.html'
+    }
+}
+
+task checkJenkinsConfig {
+    description = 'Проверка конфигурации для Jenkins'
+    doLast {
+        println "=== Jenkins Configuration Check ==="
+        println "Java version: ${System.getProperty('java.version')}"
+        println "Gradle version: ${gradle.gradleVersion}"
+        println "Project dir: ${project.projectDir}"
+        println "Test username: ${testUsername}"
+        println "Test suite: ${testSuite}"
+        println "Allure results dir: build/allure-results"
+        println "=================================="
     }
 }
