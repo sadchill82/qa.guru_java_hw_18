@@ -24,7 +24,7 @@ public class DemoQAProfileTests extends TestBase {
         assertThat(profile.getBooks()).isNotEmpty();
 
         int initialBookCount = profile.getBooks().size();
-        String bookToDelete = profile.getBooks().getFirst().getIsbn();
+        String bookToDelete = profile.getBooks().get(0).getIsbn();
 
         steps.deleteBookFromProfile(bookToDelete);
 
