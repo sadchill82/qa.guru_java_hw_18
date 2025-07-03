@@ -1,7 +1,6 @@
 package config;
 
 public class TestConfig {
-    public static final String BASE_URL = System.getProperty("demoqa.base.url", "https://demoqa.com");
 
     public static final String TEST_USERNAME = System.getProperty("test.username", "TOOLSQA-Test");
     public static final String TEST_PASSWORD = System.getProperty("test.password", "Test@@123");

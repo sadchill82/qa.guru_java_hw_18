@@ -1,11 +1,11 @@
 package steps;
 
+import config.TestConfig;
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import models.demoqa.*;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
@@ -16,8 +16,10 @@ public class DemoQASteps {
     private String authToken;
     private String userId;
 
-    @Step("Авторизация пользователя с именем {username}")
-    public void login(String username, String password) {
+    @Step("Авторизация пользователя")
+    public void login() {
+        String username = TestConfig.TEST_USERNAME;
+        String password = TestConfig.TEST_PASSWORD;
         LoginRequest request = LoginRequest.builder()
                 .userName(username)
                 .password(password)
@@ -146,76 +148,5 @@ public class DemoQASteps {
                 .then()
                 .spec(successResponseSpec)
                 .body(matchesJsonSchemaInClasspath("profile-schema.json"));
-    }
-
-    @Step("Попытка получения пользователя с ID {userId}")
-    public Response tryGetUserById(String userId) {
-        return given()
-                .spec(authorizedRequestSpec(authToken))
-                .when()
-                .get("/Account/v1/User/" + userId);
-    }
-
-    @Step("Создание нового пользователя")
-    public void createUser(String username, String password) {
-        CreateUserRequest request = CreateUserRequest.builder()
-                .userName(username)
-                .password(password)
-                .build();
-
-        Response response = given()
-                .spec(baseRequestSpec)
-                .body(request)
-                .when()
-                .post("/Account/v1/User");
-
-        assertThat(response.getStatusCode())
-                .as("Создание пользователя должно быть успешным")
-                .isIn(200, 201);
-    }
-
-    @Step("Получение токена авторизации")
-    public String generateToken(String username, String password) {
-        LoginRequest request = LoginRequest.builder()
-                .userName(username)
-                .password(password)
-                .build();
-
-        Response response = given()
-                .spec(baseRequestSpec)
-                .body(request)
-                .when()
-                .post("/Account/v1/GenerateToken");
-
-        if (response.getStatusCode() == 200) {
-            return response.jsonPath().getString("token");
-        }
-
-        return null;
-    }
-
-    @Step("Проверка авторизации пользователя")
-    public boolean isAuthorized() {
-        if (authToken == null || authToken.isEmpty()) {
-            return false;
-        }
-
-        Response response = given()
-                .spec(authorizedRequestSpec(authToken))
-                .when()
-                .get("/Account/v1/Authorized");
-
-        return response.getStatusCode() == 200;
-    }
-
-    @Step("Удаление всех книг из профиля пользователя")
-    public void deleteAllBooksFromProfile() {
-        given()
-                .spec(authorizedRequestSpec(authToken))
-                .queryParam("UserId", userId)
-                .when()
-                .delete("/BookStore/v1/Books")
-                .then()
-                .statusCode(204);
     }
 }
