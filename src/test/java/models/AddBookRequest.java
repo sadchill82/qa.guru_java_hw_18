@@ -1,24 +1,22 @@
-package models.demoqa;
+package models;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.util.List;
 
 @Data
-@Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class AddBookRequest {
     private String userId;
-    private List<CollectionOfIsbn> collectionOfIsbns;
+    private List<Isbn> collectionOfIsbns;
 
     @Data
-    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CollectionOfIsbn {
+    public static class Isbn {
         private String isbn;
     }
 }
