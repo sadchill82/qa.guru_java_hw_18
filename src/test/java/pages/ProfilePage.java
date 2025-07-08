@@ -17,8 +17,8 @@ public class ProfilePage {
         Selenide.executeJavaScript("$('footer').remove()");
     }
 
-    @Step("Открытие страницы профиля")
-    public ProfilePage openLoginPage() {
+    @Step("Открываем страницу профиля")
+    public ProfilePage openProfilePage() {
         open("/profile");
         removeAds();
         return this;
@@ -37,8 +37,14 @@ public class ProfilePage {
     }
 
     @Step("Проверка, что книг нет в профиле")
+    public ProfilePage verifyBookIsRemoved(String bookTitle) {
+        $("#see-book-" + bookTitle).shouldNotBe(visible);
+        return this;
+    }
+
+    @Step("Проверка, что конкретная книга удалена")
     public ProfilePage isBookRemovedSuccessful() {
-        $("#see-book-Learning JavaScript Design Patterns").shouldNotBe(visible);
+        verifyBookIsRemoved("Learning JavaScript Design Patterns");
         return this;
     }
 }
